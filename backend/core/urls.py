@@ -4,7 +4,7 @@ from .views import *;
 
 urlpatterns = [
     path("", api_home),
-    path('csrf/', get_csrf_token),
+    path('me/', current_user),
     path('register/', register),
     path('login/', login_view),
     path('logout/', logout),

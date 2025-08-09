@@ -53,43 +53,29 @@ def add_comment(request, pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def like_post(request, post_id):
-    """To handle the like for a post"""
     user = request.user
-
-    """Check if the post exists"""
-    try:
-        post = Post.objects.get(id=post_id)
-    except:
-        return Response({"error":"Post not found!"}, status=404)
-    
-    """Check if the post is already liked"""
-    if Like.objects.filter(user=user,post=post).exists():
-        return Response({"message":"Post already liked","likes_count":post.likes.count()} ,status=200)
-    
-    Like.objects.create(user=user,post=post)
-    return Response({"message":"Post liked successfully", "likes_count":post.likes.count()},status=200)
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def unlike_post(request, post_id):
-    """To handle the unlike for a post"""
-    user = request.user
-
-    """Check if the post exists"""
     try:
         post = Post.objects.get(id=post_id)
     except Post.DoesNotExist:
-        return Response({"error":"Post not found!"}, status=404)
-    
-    """Check if the post is already liked"""
-    try:
-        like=Like.objects.get(user=user,post=post)
-        like.delete()
-        return Response({"message":"Post is unliked","likes_count":post.likes.count()} ,status=200)
-    except Post.DoesNotExist:
-        return Response({"message":"Post is not liked ", "likes_count":post.likes.count()},status=200)
-    
+        return Response({'error': 'Post not found'}, status=status.HTTP_404_NOT_FOUND)
 
+    like_obj = Like.objects.filter(post=post, user=user)
+    if like_obj.exists():
+        # User already liked the post; unlike it
+        like_obj.delete()
+        liked = False
+    else:
+        # Like the post
+        Like.objects.create(post=post, user=user)
+        liked = True
+
+    # Return updated like count and status
+    likes_count = post.likes.count()  # count of all likes for this post
+    return Response({
+        'liked': liked,
+        'likes_count': likes_count,
+        'message': 'Liked' if liked else 'Unliked'
+    })
 
 
 
