@@ -1,12 +1,14 @@
 
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
 from core.models import Post,Comment, Like
+from django.contrib.auth.models import User
 
-from .serializers import PostSerializer,CommentSerializer
+from .serializers import PostSerializer,CommentSerializer,UserSerializer
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -25,6 +27,17 @@ def my_posts_view(request):
     serializer = PostSerializer(posts, many=True)
     return Response(serializer.data)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_posts_view(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=404)
+
+    posts = Post.objects.filter(author=user).order_by('-created_at')
+    serializer = PostSerializer(posts, many=True)
+    return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -78,4 +91,13 @@ def like_post(request, post_id):
     })
 
 
-
+class UserSearchView(APIView):
+    def get(self, request):
+        query = request.query_params.get("q", "")
+        if query:
+            users = User.objects.filter(username__icontains=query)
+        else:
+            users = User.objects.none()
+        
+        serializer = UserSerializer(users, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
